@@ -1,53 +1,86 @@
-import time
-
 from pygame import *
 
-window = display.set_mode((700, 500))
-display.set_caption("ра у квача")
-bg = transform.scale(image.load("background.png"), (700, 500))
+# клас-батько для спрайтів
+class GameSprite(sprite.Sprite):
+    def __init__(self, player_image, player_x, player_y, player_speed):
+        super().__init__()
+        self.image = transform.scale(image.load(player_image), (65, 65))
+        self.speed = player_speed
+        self.rect = self.image.get_rect()
+        self.rect.x = player_x
+        self.rect.y = player_y
 
-x1 = 100
-y1 = 300
+    def reset(self):
+        window.blit(self.image, (self.rect.x, self.rect.y))
 
-x2 = 300
-y2 = 300
 
-sprite1 = transform.scale(image.load("sprite1.png"), (100, 100))
-sprite2 = transform.scale(image.load("sprite2.png"), (100, 100))
+# нові класи-спадкоємці
+class Player(GameSprite):
+    def update(self):
+        keys = key.get_pressed()
+        if keys[K_LEFT] and self.rect.x > 5:
+            self.rect.x -= self.speed
+        if keys[K_RIGHT] and self.rect.x < win_width - 80:
+            self.rect.x += self.speed
+        if keys[K_UP] and self.rect.y > 5:
+            self.rect.y -= self.speed
+        if keys[K_DOWN] and self.rect.y < win_height - 80:
+            self.rect.y += self.speed
 
-run = True
+class Enemy(GameSprite):
+    direction = "left"
+
+    def update(self):
+        if self.rect.x <= 470:
+            self.direction = "right"
+        if self.rect.x >= win_width - 85:
+            self.direction = "left"
+
+        if self.direction == "left":
+            self.rect.x -= self.speed
+        else:
+            self.rect.x +=self.speed
+
+# Ігрова сцена:
+win_width = 700
+win_height = 500
+
+window = display.set_mode((win_width, win_height))
+display.set_caption("Maze")
+background = transform.scale(image.load("background.jpg"),
+                             (win_width, win_height))
+
+# Персонажі гри:
+player = Player('hero.png', 5, win_height - 80, 4)
+monster = Enemy('cyborg.png', win_width - 80, 280, 2)
+final = GameSprite('treasure.png', win_width - 120, win_height - 80, 0)
+
+game = True
 clock = time.Clock()
 FPS = 60
-speed = 5
 
-while run:
-    window.blit(bg, (0, 0))
-    window.blit(sprite1, (x1, y1))
-    window.blit(sprite2, (x2, y2))
+finish = False
 
+# музика
+mixer.init()
+mixer.music.load('jungles.ogg')
+mixer.music.play()
+
+while game:
     for e in event.get():
         if e.type == QUIT:
-            run = False
+            game = False
 
-    key_pressed = key.get_pressed()
-    if key_pressed[K_a] and x1 > 5:
-        x1 -= speed
-    if key_pressed[K_d] and x1 < 595:
-        x1 += speed
-    if key_pressed[K_w] and x1 > 5:
-        y1 -= speed
-    if key_pressed[K_s] and x1 < 395:
-        y1 += speed
+    if finish != True:
 
-    key_pressed = key.get_pressed()
-    if key_pressed[K_LEFT] and x2 > 5:
-        x2 -= speed
-    if key_pressed[K_RIGHT] and x2 < 595:
-        x2 += speed
-    if key_pressed[K_UP] and x2 > 5:
-        y2 -= speed
-    if key_pressed[K_DOWN] and x2 < 395:
-        y2 += speed
+        window.blit(background, (0, 0))
+
+        player.update()
+        monster.update()
+
+        player.reset()
+        monster.reset()
 
     display.update()
     clock.tick(FPS)
+
